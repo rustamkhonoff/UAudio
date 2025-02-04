@@ -1,0 +1,12 @@
+{
+  "name": "com.rustamkhonoff.uaudio",
+  "version": "1.0.0",
+  "displayName": "UAudio",
+  "description": "Simple Audio Service with cancelations and source pooling",
+  "unity": "2021.3",
+  "unityRelease": "21f1",
+  "author": {
+    "name": "rustamkhonoff",
+    "email": "rustamkhonoff@gmail.com"
+  }
+}
