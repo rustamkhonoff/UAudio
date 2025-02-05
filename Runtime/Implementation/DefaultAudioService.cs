@@ -11,7 +11,7 @@ namespace UAudio
     public class DefaultAudioService : IAudioService, IDisposable
     {
         private readonly Dictionary<string, AudioData> m_soundDatas;
-        private readonly UAudioConfiguration m_config;
+        private readonly IAudioConfiguration m_config;
         private readonly IAudioState m_state;
         private readonly List<AudioSource> m_sources;
 
@@ -21,7 +21,7 @@ namespace UAudio
         private bool m_configured;
 
 
-        public DefaultAudioService(UAudioConfiguration config, IAudioState state)
+        public DefaultAudioService(IAudioConfiguration config, IAudioState state)
         {
             m_state = state;
             m_config = config;
