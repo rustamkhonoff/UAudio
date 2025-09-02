@@ -1,6 +1,6 @@
 {
   "name": "com.rustamkhonoff.uaudio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "UAudio",
   "description": "Simple Audio Service with cancelations and source pooling",
   "unity": "2021.3",

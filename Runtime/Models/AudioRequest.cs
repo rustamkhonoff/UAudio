@@ -14,8 +14,9 @@ namespace UAudio
         public float Pitch;
         public bool Loop;
         public float Delay;
+        public float Fade;
 
-        public AudioRequest(string key, float volume = 1f, float pitch = 1f, bool loop = false, float delay = 0f)
+        public AudioRequest(string key, float volume = 1f, float pitch = 1f, bool loop = false, float delay = 0f, float fade = 0f)
         {
             Key = key;
             Clip = null;
@@ -24,9 +25,10 @@ namespace UAudio
             Loop = loop;
             Delay = delay;
             ByKey = true;
+            Fade = fade;
         }
 
-        public AudioRequest(AudioClip clip, float volume = 1f, float pitch = 1f, bool loop = false, float delay = 0f)
+        public AudioRequest(AudioClip clip, float volume = 1f, float pitch = 1f, bool loop = false, float delay = 0f, float fade = 0f)
         {
             Key = null;
             Clip = clip;
@@ -35,6 +37,7 @@ namespace UAudio
             Loop = loop;
             Delay = delay;
             ByKey = false;
+            Fade = fade;
         }
 
         public override string ToString()

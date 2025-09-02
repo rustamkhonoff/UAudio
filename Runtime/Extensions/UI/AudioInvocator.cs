@@ -10,7 +10,7 @@ namespace UAudio.UI
 
         public void Play()
         {
-            CancellationToken? token = _objectDestroyAsCancellation ? destroyCancellationToken : null;
+            CancellationToken token = _objectDestroyAsCancellation ? destroyCancellationToken : default;
 
             if (UAudioGlobal.Initialized) UAudioGlobal.Instance?.Play(_request, token);
             else Debug.LogWarning("IAudioService instance not initialized in UAudioGlobal");

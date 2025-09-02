@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,16 +11,17 @@ namespace UAudio
 {
     public class DefaultAudioService : IAudioService, IDisposable
     {
-        private readonly Dictionary<string, AudioData> m_soundDatas;
+        public event Action<AudioRequest, AudioSource, CancellationToken> OnAudioPlayed;
+
         private readonly IAudioConfiguration m_config;
         private readonly IAudioState m_state;
+        private readonly Dictionary<string, AudioData> m_soundDatas;
         private readonly List<AudioSource> m_sources;
 
         private GameObject m_serviceParent;
         private AudioSource m_baseBackgroundSource;
 
         private bool m_configured;
-
 
         public DefaultAudioService(IAudioConfiguration config, IAudioState state)
         {
@@ -35,12 +37,12 @@ namespace UAudio
             UAudioGlobal.Initialize(this);
         }
 
-        public void Play(AudioRequest request, CancellationToken? token = null)
+        public void Play(AudioRequest request, CancellationToken token = default)
         {
             PlayAt(request, Vector3.zero, token);
         }
 
-        public void PlayAt(AudioRequest request, Vector3 position, CancellationToken? token = null)
+        public void PlayAt(AudioRequest request, Vector3 position, CancellationToken token = default)
         {
             EnsureServiceConfigured();
 
@@ -51,9 +53,12 @@ namespace UAudio
             source.outputAudioMixerGroup = SoundGroup;
 
             source.SetCancellationToken(token);
+
+            PlayFade(ref request, source, token);
+            OnAudioPlayed?.Invoke(request, source, token);
         }
 
-        public void ChangeBackground(AudioRequest request, bool restartIfSameClip = false, CancellationToken? token = null)
+        public void ChangeBackground(AudioRequest request, bool restartIfSameClip = false, CancellationToken token = default)
         {
             EnsureServiceConfigured();
             AudioSource source = m_baseBackgroundSource;
@@ -72,6 +77,9 @@ namespace UAudio
             }
 
             source.SetCancellationToken(token);
+
+            PlayFade(ref request, source, token);
+            OnAudioPlayed?.Invoke(request, source, token);
         }
 
         public void StopBackground()
@@ -86,19 +94,19 @@ namespace UAudio
 
         public void SetSoundPauseState(bool state)
         {
-            Action<AudioSource> toDo = state ? a => a.Pause() : a => a.UnPause();
-            m_sources.ForEach(toDo);
+            if (state) m_sources.ForEach(a => a.Pause());
+            else m_sources.ForEach(a => a.UnPause());
         }
 
         public void SetBackgroundPauseState(bool state)
         {
-            Action<AudioSource> toDo = state ? a => a.Pause() : a => a.UnPause();
-            toDo.Invoke(m_baseBackgroundSource);
+            if (state) m_baseBackgroundSource.Pause();
+            else m_baseBackgroundSource.UnPause();
         }
 
 
         public AudioSource PlayInBackground(AudioRequest request, AudioMixerGroup audioMixer = null,
-            CancellationToken? token = null)
+            CancellationToken token = default)
         {
             EnsureServiceConfigured();
 
@@ -108,6 +116,9 @@ namespace UAudio
             source.outputAudioMixerGroup = BackgroundGroup;
 
             source.SetCancellationToken(token);
+
+            PlayFade(ref request, source, token);
+            OnAudioPlayed?.Invoke(request, source, token);
 
             return source;
         }
@@ -166,6 +177,7 @@ namespace UAudio
             }
 
             ResetAudioSource(source);
+
             return source;
         }
 
@@ -197,6 +209,39 @@ namespace UAudio
             SetBackgroundVolume(m_state.BackgroundVolume);
             SetSoundVolume(m_state.SoundVolume);
             SetMasterVolume(m_state.RootVolume);
+        }
+
+        private void PlayFade(ref AudioRequest req, AudioSource audioSource, CancellationToken cancellationToken)
+        {
+            if (req.Fade <= 0) return;
+            if (req.Loop) return;
+
+            float totalDuration = audioSource.clip.length / Math.Abs(audioSource.pitch);
+
+            float left = totalDuration - req.Fade * 2f;
+            if (left <= 0) return;
+
+            float maxVolume = req.Volume;
+
+            IEnumerator Fade(AudioRequest request)
+            {
+                for (float i = 0; i < 1f; i += Time.deltaTime / request.Fade)
+                {
+                    audioSource.volume = Mathf.Lerp(0f, maxVolume, i);
+                    yield return null;
+                }
+
+                yield return new WaitForSeconds(left);
+
+                for (float i = 0; i < 1f; i += Time.deltaTime / request.Fade)
+                {
+                    audioSource.volume = Mathf.Lerp(maxVolume, 0f, i);
+                    yield return null;
+                }
+            }
+
+            Coroutine coroutine = AudioServiceMonoHelper.Instance.StartCoroutine(Fade(req));
+            cancellationToken.Register(() => AudioServiceMonoHelper.Instance.StopCoroutine(coroutine));
         }
 
         public void Dispose()
