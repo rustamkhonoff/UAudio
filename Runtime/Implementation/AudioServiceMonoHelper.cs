@@ -12,7 +12,10 @@ namespace UAudio
             {
                 if (_instance != null) return _instance;
 
-                AudioServiceMonoHelper helper = new GameObject(nameof(AudioServiceMonoHelper)).AddComponent<AudioServiceMonoHelper>();
+                AudioServiceMonoHelper helper =
+                    new GameObject(nameof(AudioServiceMonoHelper)).AddComponent<AudioServiceMonoHelper>();
+                
+                DontDestroyOnLoad(helper.gameObject);
                 _instance = helper;
                 return _instance;
             }
